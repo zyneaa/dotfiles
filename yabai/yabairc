@@ -1,0 +1,50 @@
+# A simple Yabai configuration for automatic tiling and appearance.
+# Place this file at ~/.yabairc
+
+# --- Global Settings ---
+# Set the default tiling mode to Binary Space Partitioning (BSP)
+yabai -m config layout bsp
+# Disable the native macOS window shadow
+yabai -m config window_border off
+yabai -m config window_shadow off
+
+# --- Spacing and Padding ---
+# Set inner gaps (space between windows) to 10 pixels
+yabai -m config window_gap 10
+# Set padding around the edges of the screen (top, bottom, left, right)
+# Note: The top padding is left for simple-bar (see Step 2)
+yabai -m config top_padding 5
+yabai -m config bottom_padding 5
+yabai -m config left_padding 5
+yabai -m config right_padding 5
+
+# --- Border Appearance (Visual Focus Feedback) ---
+# Enable borders for visual feedback
+yabai -m config window_border on
+yabai -m config window_border_width 2
+yabai -m config active_window_border_color 0xff82aaff    # Blue (similar to TokyoNight)
+yabai -m config normal_window_border_color 0xff5a628c    # Darker muted color
+
+# --- Focus/Movement Keybindings ---
+# The actual keybindings are usually handled by skhd, but these are useful defaults
+
+# Focus window north, east, south, west
+yabai -m config focus_follows_mouse off
+yabai -m config mouse_modifier cmd
+# Focus neighboring window (requires skhd to bind to these)
+# e.g., skhd: cmd - h : yabai -m window --focus west
+# e.g., skhd: cmd - l : yabai -m window --focus east
+
+# --- Space Layout Rules ---
+# Set space 1 and 2 to 'bsp' layout on start
+# yabai -m space 1 --layout bsp
+# yabai -m space 2 --layout bsp
+
+# --- Final Reload ---
+# Automatically set windows to float on start (like initial settings window)
+for wid in $(yabai -m query --windows | jq -r '.[] | select(."is-floating" == true) | .id'); do
+    yabai -m window "$wid" --stack parent
+done
+
+yabai -m signal --add app='^Ghostty$' event=window_created action='yabai -m space --layout bsp'
+yabai -m signal --add app='^Ghostty$' event=window_destroyed action='yabai -m space --layout bsp'
