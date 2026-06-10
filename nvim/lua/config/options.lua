@@ -38,3 +38,4 @@ vim.api.nvim_create_autocmd("BufLeave", {
     vim.g.autoformat = false
   end,
 })
+

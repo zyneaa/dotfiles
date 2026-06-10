@@ -66,7 +66,7 @@ vim.keymap.set("n", "<leader>ra", function()
 end, { desc = "Rapture All Buffers" })
 
 -- New file and buffer at currently opened buffer's dir
-vim.keymap.set("n", "<leader>aa", function()
+vim.keymap.set("n", "<leader>fa", function()
   local current_file = vim.api.nvim_buf_get_name(0)
   local current_dir = vim.fn.fnamemodify(current_file, ":p:h")
   local filename = vim.fn.input("Enter filename: ")
@@ -87,7 +87,7 @@ vim.keymap.set("n", "<leader>aa", function()
 end, { desc = "Create new file in current buffer's dir" })
 
 -- New file at given path
-vim.keymap.set("n", "<leader>as", function()
+vim.keymap.set("n", "<leader>fs", function()
   local filepath = vim.fn.input("Enter full path: ")
   if filepath == "" then
     print("Invalid path or ESC entered")
@@ -108,19 +108,20 @@ vim.keymap.set("n", "<leader>as", function()
   print("New file created: " .. filepath)
 end, { desc = "Create new file from path" })
 
--- Jumping to first error and first waring
-vim.keymap.set("n", "<Leader>mm", function()
-  vim.diagnostic.goto_next({ severity = vim.diagnostic.severity.ERROR })
-end, { desc = "Jump to next error" })
-
-vim.keymap.set("n", "<Leader>m", function()
-  vim.diagnostic.goto_next({ severity = vim.diagnostic.severity.WARN })
-end, { desc = "Jump to next warning" })
-
 -- Error pop-up
 vim.keymap.set("n", "<leader>se", function()
   vim.diagnostic.open_float(nil, { focus = false })
 end, { desc = "Show diagnostic (error) in float" })
+
+-- Jump to next error
+vim.keymap.set("n", "<Leader>mm", function()
+  vim.diagnostic.jump({ count = 1, severity = vim.diagnostic.severity.ERROR })
+end, { desc = "Jump to next error" })
+
+-- Jump to next warning
+vim.keymap.set("n", "<Leader>m", function()
+  vim.diagnostic.jump({ count = 1, severity = vim.diagnostic.severity.WARN })
+end, { desc = "Jump to next warning" })
 
 -- Lua line toggle
 vim.keymap.set("n", "<leader>tl", function()
@@ -130,3 +131,65 @@ vim.keymap.set("n", "<leader>tl", function()
     vim.o.laststatus = 0 -- hide it
   end
 end, { desc = "Toggle LuaLine" })
+
+vim.keymap.set("n", "<leader>cp", function()
+  local clients = vim.lsp.get_clients({ bufnr = 0 })
+  if #clients == 0 then
+    vim.cmd("LspStart")
+    print("LSP back on deck")
+  else
+    vim.cmd("LspStop")
+    print("LSP is cooked")
+  end
+end, { desc = "Toggle LSP" })
+
+-- Global tracking variable for the persistent terminal buffer ID
+local term_buf_id = nil
+
+-- 1. "Fold" / Toggle Terminal (Keeps output history alive)
+vim.keymap.set({ "n", "t" }, "<leader>tt", function()
+  -- If we are currently inside a terminal buffer, hide it (switch to previous buffer)
+  if vim.bo.buftype == "terminal" then
+    vim.cmd("wincmd p")
+    return
+  end
+
+  -- If the terminal buffer exists and is valid, re-open it in a split
+  if term_buf_id and vim.api.nvim_buf_is_valid(term_buf_id) then
+    vim.cmd("botright split")
+    vim.cmd("buffer " .. term_buf_id)
+    vim.cmd("resize 15") -- Adjust height to your liking
+    vim.cmd("startinsert")
+  else
+    -- Create a brand new terminal split if none exists
+    vim.cmd("botright split")
+    vim.cmd("terminal")
+    vim.cmd("resize 15")
+    term_buf_id = vim.api.nvim_get_current_buf()
+    vim.cmd("startinsert")
+  end
+end, { desc = "Toggle/Fold Terminal (Keep History)" })
+
+-- 2. "Kill" / Flush Terminal (Completely destroys the buffer and process)
+vim.keymap.set({ "n", "t" }, "<leader>tk", function()
+  -- Find if there's any active terminal buffer running
+  local current_buf = vim.api.nvim_get_current_buf()
+
+  if vim.bo[current_buf].buftype == "terminal" then
+    -- If inside the terminal, kill it directly
+    vim.cmd("bdelete!")
+    term_buf_id = nil
+    print("Terminal killed.")
+  elseif term_buf_id and vim.api.nvim_buf_is_valid(term_buf_id) then
+    -- If outside the terminal but it exists, nuke it by ID
+    vim.api.nvim_buf_delete(term_buf_id, { force = true })
+    term_buf_id = nil
+    print("Terminal killed.")
+  else
+    print("No active terminal to kill.")
+  end
+end, { desc = "Kill Terminal Process Completely" })
+
+-- 3. Ergonomic Terminal Mode Escape
+-- Let's you hit <Esc> to drop into normal mode inside the terminal split
+vim.keymap.set("t", "<Esc>", [[<C-\><C-n>]], { desc = "Escape Terminal Mode" })
