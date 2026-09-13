@@ -29,22 +29,16 @@ return {
     ---@type opencode.Opts
     vim.g.opencode_opts = {
       lsp = {
-        enabled = true,
+        enabled = false,
       },
       server = {
         url = "http://127.0.0.1:8888",
         start = function() end,
       },
-      contexts = {
-        ["@impl"] = function(context)
-          return context:implement()
-        end,
-      },
     }
 
     vim.o.autoread = true -- Required for `vim.g.opencode_opts.events.reload`
 
-    -- Recommended/example keymaps
     vim.keymap.set({ "n", "x" }, "<leader>oa", function()
       require("opencode").ask("@this: ")
     end, { desc = "Ask opencode…" })
